@@ -7,7 +7,13 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import {
   ArrowRight, Activity, Moon, Clock, BrainCircuit, BookOpen,
-  CheckCircle2, XCircle, Linkedin, Twitter, Instagram, ChevronRight
+  CheckCircle2, XCircle, Linkedin, Twitter, Instagram, ChevronRight,
+  Sparkles,
+  Brain,
+  Target,
+  Star,
+  ChevronUp,
+  ChevronDown
 } from "lucide-react";
 
 type WaitlistFormData = {
@@ -18,10 +24,33 @@ type WaitlistFormData = {
   sleepChallenge: string;
 };
 
+const challenges = [
+    { id: "Falling asleep", icon: "🌙", label: "Falling asleep faster", desc: "My mind won't shut off", color: "bg-blue-100" },
+    { id: "Stress", icon: "🧠", label: "Managing daily stress", desc: "Anxiety keeps me awake", color: "bg-purple-100" },
+    { id: "Quality", icon: "⚡", label: "Waking up energized", desc: "I always feel groggy", color: "bg-yellow-100" },
+    { id: "Irregular Schedule", icon: "⏰", label: "Fixing my schedule", desc: "Irregular sleep patterns", color: "bg-orange-100" }
+  ];
+
+  const tabs = [
+      { title: "Insights", icon: <Brain className="w-5 h-5"/>, color: "text-blue-600", content: "Understand exactly how your daily habits and focus levels correlate with your deep sleep cycles. No more guessing." },
+      { title: "Routines", icon: <Activity className="w-5 h-5"/>, color: "text-purple-600", content: "Follow personalized wind-down and wake-up routines perfectly aligned to your natural circadian chronotype." },
+      { title: "Stress", icon: <Target className="w-5 h-5"/>, color: "text-orange-600", content: "Identify psychological stressors that disrupt your REM sleep and learn actionable techniques to clear your mind." }
+    ];
+  
+    const faqs = [
+      { q: "What is Luna?", a: "Luna is an AI-powered sleep intelligence platform designed specifically for professionals looking to optimize their deep sleep and daily energy." },
+      { q: "How does the Apple TestFlight beta work?", a: "Once you sign up for the waitlist, you'll be in line for our private beta. We'll send you an email with a secure Apple TestFlight link to install the app on your iOS device." },
+      { q: "Is my sleep data secure?", a: "Yes. Your privacy is our top priority. All health and intelligence data is encrypted and never sold to third parties." },
+      { q: "Why is it invite-only right now?", a: "We want to ensure a high-quality experience for early adopters. By limiting spots, we can work closely with our first 500 users to perfect the intelligence algorithms." }
+    ];
+
 export default function LandingPage() {
   const { register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm<WaitlistFormData>();
   const [success, setSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+
+  const [activeTab, setActiveTab] = useState(0);
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   const onSubmit = async (data: WaitlistFormData) => {
     try {
@@ -49,12 +78,16 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-background selection:bg-primary/30 selection:text-white relative overflow-hidden">
+    <div className="flex flex-col min-h-screen bg-background selection:bg-primary/30 selection:text-white relative overflow-clip">
+      <div className="bg-primary text-white text-sm font-medium py-3 text-center px-4 shadow-sm relative z-50 flex items-center justify-center gap-2">
+        <Sparkles className="w-4 h-4 text-accent" />
+        Beta program is now open for early adopters! Claim your spot today.
+      </div>
       {/* Background ambient gradients */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-primary/10 blur-[150px] rounded-full -z-10 animate-float pointer-events-none" />
 
       {/* Navbar */}
-      <header className="fixed top-0 w-full z-50 bg-background/70 backdrop-blur-xl border-b border-white/5 transition-all">
+      <header className="sticky top-0 w-full z-50 bg-background/70 backdrop-blur-xl border-b border-white/5 transition-all">
         <div className="container mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/" className="text-xl font-semibold tracking-tight text-white flex items-center gap-2">
             <span className="w-6 h-6 rounded-full bg-gradient-to-tr from-primary to-secondary" />
@@ -73,13 +106,17 @@ export default function LandingPage() {
       </header>
 
       {/* Hero Section */}
-      <section className="pt-40 pb-20 px-6 container mx-auto flex flex-col items-center text-center relative z-10">
+      <section className="pt-20 pb-20 px-6 container mx-auto flex flex-col items-center text-center relative z-10">
+        {/* <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20 mb-8 backdrop-blur-md">
+            <Moon className="w-4 h-4 text-accent" />
+            <span className="text-sm font-medium">The sleep intelligence app for professionals</span>
+          </div> */}
         <div className="w-[300px] h-[300px] md:w-[400px] md:h-[400px] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-gradient-to-tr from-primary/20 via-secondary/10 to-transparent rounded-full blur-3xl -z-10" />
         <div className="w-20 h-20 rounded-full border border-white/10 mb-8 flex items-center justify-center bg-card/50 backdrop-blur-sm relative shadow-[0_0_30px_rgba(124,140,255,0.3)]">
           <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-primary to-secondary animate-pulse" />
         </div>
 
-        <h1 className="text-5xl md:text-7xl font-semibold tracking-tighter mb-6 text-white max-w-4xl">
+        <h1 className="text-5xl md:text-7xl font-semibold tracking-tighter mb-6 text-white max-w-5xl">
           Your mind works better when your <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">sleep works better.</span>
         </h1>
         <p className="text-xl text-secondary-text max-w-2xl mb-10 font-light leading-relaxed">
@@ -258,6 +295,98 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* INTERACTIVE SELF-SELECTION (The Micro-Commitment) */}
+      <section className="py-24 px-6 container mx-auto">
+        <div className="text-center mb-12 animate-fade-in">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4 tracking-tight">What kind of sleep improvement are you looking for?</h2>
+          <p className="text-secondary-text text-lg">Select a challenge below to customize your early access application.</p>
+        </div>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+          {challenges.map((item, i) => (
+            <button 
+              key={i} 
+              // onClick={() => handleChallengeClick(item.id)}
+              className="bg-card border-2 border-transparent hover:border-primary/20 p-8 rounded-[32px] shadow-soft flex flex-col items-center text-center transition-all hover:-translate-y-2 group"
+            >
+              <div className={`w-16 h-16 ${item.color} rounded-full flex items-center justify-center text-3xl mb-6 shadow-sm group-hover:scale-110 transition-transform`}>
+                {item.icon}
+              </div>
+              <h3 className="text-xl font-bold mb-2 text-primary-text">{item.label}</h3>
+              <p className="text-secondary-text font-medium text-sm">{item.desc}</p>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* TABBED VALUE PROP (Chunking Information) */}
+      <section className="py-24 px-6 border-y border-slate-100 relative">
+        <div className="container mx-auto max-w-5xl">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">The sleep app for every kind of night.</h2>
+          </div>
+
+          <div className="rounded-[40px] shadow-soft overflow-hidden border border-slate-100 flex flex-col md:flex-row min-h-[400px]">
+            {/* Tabs sidebar */}
+            <div className="md:w-1/3 p-6 flex flex-col justify-center gap-2 border-r border-slate-100">
+              {tabs.map((tab, idx) => (
+                <button 
+                  key={idx}
+                  onClick={() => setActiveTab(idx)}
+                  className={`w-full text-left px-6 py-5 rounded-2xl flex items-center gap-4 transition-all font-bold text-lg ${activeTab === idx ? "bg-white/5 shadow-soft text-primary border border-slate-100/10 scale-105 z-10" : "text-secondary-text hover:bg-slate-50"}`}
+                >
+                  <div className={`p-2 rounded-full ${activeTab === idx ? 'bg-primary/10' : 'bg-slate-100'}`}>
+                    {tab.icon}
+                  </div>
+                  {tab.title}
+                </button>
+              ))}
+            </div>
+            
+            {/* Tab content */}
+            <div className="md:w-2/3 p-12 flex flex-col justify-center relative overflow-hidden">
+              <div className="absolute -right-20 -bottom-20 w-64 h-64 bg-accent/20 blur-[80px] rounded-full pointer-events-none" />
+              <div className="active-tab-content animate-fade-in relative z-10">
+                <div className={`w-16 h-16 rounded-full mb-8 flex items-center justify-center bg-slate-50 border border-slate-100 shadow-sm ${tabs[activeTab].color}`}>
+                  {tabs[activeTab].icon}
+                </div>
+                <h3 className="text-3xl font-bold mb-4">{tabs[activeTab].title} Intelligence</h3>
+                <p className="text-xl text-secondary-text leading-relaxed font-medium">
+                  {tabs[activeTab].content}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* LAYERED SOCIAL PROOF */}
+      <section className="py-24 px-6 container mx-auto text-center">
+        <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-16">Members are enjoying happier and healthier mornings.</h2>
+        
+        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto mb-20">
+          {[
+            { text: "Since using Luna, my HRV has gone up by 20% and I actually wake up before my alarm.", author: "Sarah J.", role: "Product Manager" },
+            { text: "The personalized wind-down routines broke my habit of doomscrolling in bed. Highly recommend.", author: "Mark T.", role: "Software Engineer" },
+            { text: "I never realized how much my inconsistent schedule was hurting my deep sleep until Luna showed me.", author: "Elena R.", role: "Startup Founder" }
+          ].map((review, i) => (
+            <div key={i} className="bg-card p-8 rounded-3xl shadow-soft border border-slate-100 text-left relative">
+              <div className="flex text-accent mb-4">
+                {[1,2,3,4,5].map(star => <Star key={star} className="w-5 h-5 fill-accent border-none" />)}
+              </div>
+              <p className="text-primary-text font-medium text-lg mb-6 leading-relaxed">"{review.text}"</p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-slate-200" />
+                <div>
+                  <div className="font-bold text-sm">{review.author}</div>
+                  <div className="text-xs text-secondary-text">{review.role}</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        </section>
+
       {/* Early Access / Waitlist Form Section */}
       <section id="early-access" className="py-32 px-6 container mx-auto relative">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 blur-[150px] rounded-full -z-10 pointer-events-none" />
@@ -378,6 +507,31 @@ export default function LandingPage() {
           </p>
         </div>
       </section>
+
+      {/* FAQ ACCORDION (Objection Handling) */}
+            <section className="py-24 px-6 container mx-auto">
+              <div className="max-w-3xl mx-auto">
+                <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-12 text-center">Frequently asked questions</h2>
+                <div className="space-y-4">
+                  {faqs.map((faq, i) => (
+                    <div key={i} className="border border-slate-200 rounded-2xl bg-white overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                      <button 
+                        onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                        className="w-full text-left p-6 font-bold text-lg flex items-center justify-between"
+                      >
+                        {faq.q}
+                        {openFaq === i ? <ChevronUp className="w-5 h-5 text-secondary-text" /> : <ChevronDown className="w-5 h-5 text-secondary-text" />}
+                      </button>
+                      {openFaq === i && (
+                        <div className="px-6 pb-6 text-secondary-text font-medium leading-relaxed animate-fade-in border-t border-slate-100 pt-4">
+                          {faq.a}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
 
       {/* Final CTA Section */}
       <section className="py-32 px-6 container mx-auto text-center border-t border-white/5">
