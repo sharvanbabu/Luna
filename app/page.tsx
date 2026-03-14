@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -45,12 +45,22 @@ const challenges = [
     ];
 
 export default function LandingPage() {
-  const { register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm<WaitlistFormData>();
+  const { register, handleSubmit, formState: { errors, isSubmitting }, reset, setValue } = useForm<WaitlistFormData>();
   const [success, setSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
   const [activeTab, setActiveTab] = useState(0);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const formRef = useRef<HTMLDivElement>(null);
+  const [selectedChallenge, setSelectedChallenge] = useState<string | null>(null);
+
+  const handleChallengeClick = (challenge: string) => {
+    setSelectedChallenge(challenge);
+    setValue("sleepChallenge", challenge);
+    if (formRef.current) {
+      formRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  };
 
   const onSubmit = async (data: WaitlistFormData) => {
     try {
@@ -173,7 +183,7 @@ export default function LandingPage() {
       </section>
 
       {/* Transformation Section */}
-      <section className="py-24 px-6 container mx-auto border-t border-white/5">
+      <section className="py-12 px-6 container mx-auto border-t border-white/5">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-5xl font-semibold tracking-tight">What better sleep changes</h2>
         </div>
@@ -222,7 +232,7 @@ export default function LandingPage() {
       </section>
 
       {/* How Luna Works */}
-      <section id="how-it-works" className="py-24 px-6 container mx-auto">
+      <section id="how-it-works" className="py-12 px-6 container mx-auto">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-3xl md:text-5xl font-semibold tracking-tight mb-16 text-center">How Luna works</h2>
           <div className="grid md:grid-cols-4 gap-6">
@@ -244,43 +254,87 @@ export default function LandingPage() {
       </section>
 
       {/* Features Section */}
+
       <section className="py-24 px-6 container mx-auto">
-        <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
-          <div className="bg-card border border-white/5 p-10 rounded-[32px] row-span-2 group">
-            <h3 className="text-2xl font-medium mb-3 group-hover:text-primary transition-colors">Sleep Insights</h3>
-            <p className="text-secondary-text text-lg">Understand your sleep patterns implicitly, mapped intuitively with advanced metrics.</p>
-            <div className="mt-8 h-40 bg-gradient-to-t from-background to-background/50 rounded-xl border border-white/5 flex items-end p-4">
-              <div className="w-full flex justify-between items-end gap-2">
-                {[40, 60, 45, 80, 50, 90, 75].map((h, i) => (
-                  <div key={i} className="w-full bg-primary/20 rounded-t-sm group-hover:bg-primary/40 transition-all" style={{ height: `${h}%` }} />
-                ))}
-              </div>
-            </div>
+        <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">The sleep app for every kind of night.</h2>
           </div>
-          <div className="bg-card border border-white/5 p-10 rounded-[32px] group">
-            <h3 className="text-xl font-medium mb-2 group-hover:text-secondary transition-colors">Personalized Sleep Routine</h3>
-            <p className="text-secondary-text">Daily guidance crafted meticulously for healthier sleep habits.</p>
-          </div>
-          <div className="bg-card border border-white/5 p-10 rounded-[32px] group">
-            <h3 className="text-xl font-medium mb-2 group-hover:text-primary transition-colors">Stress Awareness</h3>
-            <p className="text-secondary-text">Identify psychological patterns affecting deep recovery.</p>
-          </div>
-          <div className="bg-card border border-white/5 p-10 rounded-[32px] md:col-span-2 flex flex-col md:flex-row items-center justify-between gap-8 group">
-            <div>
-              <h3 className="text-2xl font-medium mb-3 group-hover:text-secondary transition-colors">Circadian Rhythm Guidance</h3>
-              <p className="text-secondary-text text-lg">Align your biological body clock naturally with modern demands.</p>
-            </div>
-            <div className="w-24 h-24 rounded-full border-[6px] border-secondary/20 border-t-secondary animate-[spin_10s_linear_infinite]" />
-          </div>
+  <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+    
+    {/* Big Feature: Sleep Insights */}
+    <div className="bg-card border border-white/10 p-10 rounded-[32px] row-span-2 group relative overflow-hidden">
+      {/* Subtle background glow */}
+      <div className="absolute -top-24 -left-24 w-48 h-48 bg-primary/10 blur-[80px] rounded-full pointer-events-none" />
+      
+      <div className="relative z-10">
+        <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
+          <BrainCircuit className="w-6 h-6 text-primary" />
         </div>
-      </section>
+        <h3 className="text-2xl font-bold mb-3 group-hover:text-primary transition-colors text-white">Sleep Insights</h3>
+        <p className="text-secondary-text text-lg leading-relaxed">
+          Understand your sleep patterns implicitly, mapped intuitively with advanced metrics.
+        </p>
+        
+        {/* Fixed Chart Visual */}
+        <div className="mt-6 h-48 bg-white/5 rounded-2xl border border-white/5 flex items-end p-6 gap-3">
+          {[40, 65, 45, 90, 55, 80, 70].map((h, i) => (
+            <div 
+              key={i} 
+              className="w-full bg-gradient-to-t from-primary/40 to-primary rounded-t-md transition-all duration-500 group-hover:brightness-125" 
+              style={{ height: `${h}%` }} 
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+
+    {/* Small Feature: Routine */}
+    <div className="bg-card border border-white/10 p-8g rounded-[32px] group hover:bg-white/[0.02] transition-colors">
+      <div className="flex flex-col items-start gap-5">
+        <div className="w-12 h-12 rounded-2xl bg-secondary/10 flex items-center justify-center shrink-0">
+          <Clock className="w-6 h-6 text-secondary" />
+        </div>
+        <div>
+          <h3 className="text-xl font-bold mb-2 group-hover:text-secondary transition-colors text-white">Personalized Routine</h3>
+          <p className="text-secondary-text leading-relaxed">Daily guidance crafted meticulously for healthier sleep habits.</p>
+        </div>
+      </div>
+    </div>
+
+    {/* Small Feature: Stress */}
+    <div className="bg-card border border-white/10 p-8 rounded-[32px] group hover:bg-white/[0.02] transition-colors">
+      <div className="flex flex-col items-start gap-5">
+        <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+          <Activity className="w-6 h-6 text-primary" />
+        </div>
+        <div>
+          <h3 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors text-white">Stress Awareness</h3>
+          <p className="text-secondary-text leading-relaxed">Identify psychological patterns affecting deep recovery.</p>
+        </div>
+      </div>
+    </div>
+
+    {/* Wide Feature: Circadian */}
+    <div className="bg-card border border-white/10 p-10 rounded-[32px] md:col-span-2 flex flex-col md:flex-row items-center justify-between gap-8 group relative overflow-hidden">
+       <div className="absolute right-0 top-0 w-64 h-full bg-secondary/5 blur-[100px] pointer-events-none" />
+       <div className="relative z-10">
+        <h3 className="text-2xl font-bold mb-3 group-hover:text-secondary transition-colors text-white">Circadian Rhythm Guidance</h3>
+        <p className="text-secondary-text text-lg max-w-xl">Align your biological body clock naturally with modern demands using light-exposure tracking.</p>
+      </div>
+      <div className="relative shrink-0">
+        <div className="w-24 h-24 rounded-full border-[4px] border-secondary/10 border-t-secondary animate-[spin_8s_linear_infinite]" />
+        <Moon className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 text-secondary" />
+      </div>
+    </div>
+  </div>
+</section>
 
       {/* Science Section */}
       <section id="science" className="py-24 px-6 container mx-auto border-y border-white/5">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-5xl font-semibold tracking-tight">Built on sleep science.</h2>
         </div>
-        <div className="grid md:grid-cols-4 gap-6 max-w-6xl mx-auto">
+        <div className="grid md:grid-cols-3 gap-6 w-max mx-auto">
           {[
             // { title: "Circadian rhythm research", icon: <Sun className="w-5 h-5 text-primary" /> },
             { title: "Sleep & cognitive performance", icon: <BrainCircuit className="w-5 h-5 text-secondary" /> },
@@ -306,7 +360,7 @@ export default function LandingPage() {
           {challenges.map((item, i) => (
             <button 
               key={i} 
-              // onClick={() => handleChallengeClick(item.id)}
+              onClick={() => handleChallengeClick(item.id)}
               className="bg-card border-2 border-transparent hover:border-primary/20 p-8 rounded-[32px] shadow-soft flex flex-col items-center text-center transition-all hover:-translate-y-2 group"
             >
               <div className={`w-16 h-16 ${item.color} rounded-full flex items-center justify-center text-3xl mb-6 shadow-sm group-hover:scale-110 transition-transform`}>
@@ -319,50 +373,9 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* TABBED VALUE PROP (Chunking Information) */}
-      <section className="py-24 px-6 border-y border-slate-100 relative">
-        <div className="container mx-auto max-w-5xl">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">The sleep app for every kind of night.</h2>
-          </div>
-
-          <div className="rounded-[40px] shadow-soft overflow-hidden border border-slate-100 flex flex-col md:flex-row min-h-[400px]">
-            {/* Tabs sidebar */}
-            <div className="md:w-1/3 p-6 flex flex-col justify-center gap-2 border-r border-slate-100">
-              {tabs.map((tab, idx) => (
-                <button 
-                  key={idx}
-                  onClick={() => setActiveTab(idx)}
-                  className={`w-full text-left px-6 py-5 rounded-2xl flex items-center gap-4 transition-all font-bold text-lg ${activeTab === idx ? "bg-white/5 shadow-soft text-primary border border-slate-100/10 scale-105 z-10" : "text-secondary-text hover:bg-slate-50"}`}
-                >
-                  <div className={`p-2 rounded-full ${activeTab === idx ? 'bg-primary/10' : 'bg-slate-100'}`}>
-                    {tab.icon}
-                  </div>
-                  {tab.title}
-                </button>
-              ))}
-            </div>
-            
-            {/* Tab content */}
-            <div className="md:w-2/3 p-12 flex flex-col justify-center relative overflow-hidden">
-              <div className="absolute -right-20 -bottom-20 w-64 h-64 bg-accent/20 blur-[80px] rounded-full pointer-events-none" />
-              <div className="active-tab-content animate-fade-in relative z-10">
-                <div className={`w-16 h-16 rounded-full mb-8 flex items-center justify-center bg-slate-50 border border-slate-100 shadow-sm ${tabs[activeTab].color}`}>
-                  {tabs[activeTab].icon}
-                </div>
-                <h3 className="text-3xl font-bold mb-4">{tabs[activeTab].title} Intelligence</h3>
-                <p className="text-xl text-secondary-text leading-relaxed font-medium">
-                  {tabs[activeTab].content}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* LAYERED SOCIAL PROOF */}
       <section className="py-24 px-6 container mx-auto text-center">
-        <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-16">Members are enjoying happier and healthier mornings.</h2>
+        <h2 className="text-2xl md:text-4xl font-bold tracking-tight mb-16">Members are enjoying happier and healthier mornings.</h2>
         
         <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto mb-20">
           {[
@@ -370,13 +383,13 @@ export default function LandingPage() {
             { text: "The personalized wind-down routines broke my habit of doomscrolling in bed. Highly recommend.", author: "Mark T.", role: "Software Engineer" },
             { text: "I never realized how much my inconsistent schedule was hurting my deep sleep until Luna showed me.", author: "Elena R.", role: "Startup Founder" }
           ].map((review, i) => (
-            <div key={i} className="bg-card p-8 rounded-3xl shadow-soft border border-slate-100 text-left relative">
+            <div key={i} className="bg-card/10 p-8 rounded-3xl shadow-soft border-2 border-slate-100/10 text-left relative">
               <div className="flex text-accent mb-4">
-                {[1,2,3,4,5].map(star => <Star key={star} className="w-5 h-5 fill-accent border-none" />)}
+                {[1,2,3,4,5].map(star => <Star key={star} className="w-5 h-5 fill-amber-500 stroke-0 border-none" />)}
               </div>
               <p className="text-primary-text font-medium text-lg mb-6 leading-relaxed">"{review.text}"</p>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-slate-200" />
+                <div className="w-10 h-10 rounded-full bg-slate-200/20" />
                 <div>
                   <div className="font-bold text-sm">{review.author}</div>
                   <div className="text-xs text-secondary-text">{review.role}</div>
@@ -388,7 +401,7 @@ export default function LandingPage() {
         </section>
 
       {/* Early Access / Waitlist Form Section */}
-      <section id="early-access" className="py-32 px-6 container mx-auto relative">
+      <section ref={formRef} id="early-access" className="py-32 px-6 container mx-auto relative">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 blur-[150px] rounded-full -z-10 pointer-events-none" />
         <div className="max-w-xl mx-auto text-center mb-12">
           <h2 className="text-4xl md:text-5xl font-semibold tracking-tight mb-4">Join the Luna Beta</h2>
@@ -436,7 +449,10 @@ export default function LandingPage() {
                 />
               </div>
 
-              <div>
+              
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
                 <label className="block text-sm font-medium mb-1.5 text-secondary-text">Profession</label>
                 <input
                   type="text"
@@ -445,8 +461,6 @@ export default function LandingPage() {
                   {...register("profession", { required: "Profession is required" })}
                 />
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1.5 text-secondary-text">Age Range</label>
                   <select
@@ -461,7 +475,9 @@ export default function LandingPage() {
                     <option value="55+" className="bg-card">55+</option>
                   </select>
                 </div>
-                <div>
+                
+              </div>
+<div>
                   <label className="block text-sm font-medium mb-1.5 text-secondary-text">Sleep Challenge</label>
                   <select
                     className="w-full bg-[#1A2333]/50 border border-white/5 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all appearance-none shadow-inner"
@@ -474,8 +490,6 @@ export default function LandingPage() {
                     <option value="Quality" className="bg-card">Low Quality</option>
                   </select>
                 </div>
-              </div>
-
               {/* {Object.keys(errors).length > 0 && <p className="text-red-400 text-xs mt-2 flex items-center gap-1"><AlertCircle className="w-3 h-3"/> Please fill out all required fields.</p>} */}
               {errorMsg && <p className="text-red-400 text-sm mt-2">{errorMsg}</p>}
 
@@ -498,32 +512,22 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* About Section */}
-      <section className="py-24 px-6 container mx-auto">
-        <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-2xl md:text-3xl tracking-tight text-white mb-6 font-medium">About Luna</h2>
-          <p className="text-xl md:text-2xl text-secondary-text font-light leading-relaxed">
-            Luna is building the future of sleep intelligence to help professionals restore healthy sleep in a high stress digital world.
-          </p>
-        </div>
-      </section>
-
       {/* FAQ ACCORDION (Objection Handling) */}
             <section className="py-24 px-6 container mx-auto">
               <div className="max-w-3xl mx-auto">
-                <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-12 text-center">Frequently asked questions</h2>
+                <h2 className="text-3xl md:text-5xl font-bold tracking-tighter mb-12 text-center">Frequently asked questions</h2>
                 <div className="space-y-4">
                   {faqs.map((faq, i) => (
-                    <div key={i} className="border border-slate-200 rounded-2xl bg-white overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                    <div key={i} className="border border-slate-200/10 rounded-2xl bg-slate-800/30 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                       <button 
                         onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                        className="w-full text-left p-6 font-bold text-lg flex items-center justify-between"
+                        className="w-full text-left p-6 font-bold tracking-tighter text-lg flex items-center justify-between"
                       >
                         {faq.q}
                         {openFaq === i ? <ChevronUp className="w-5 h-5 text-secondary-text" /> : <ChevronDown className="w-5 h-5 text-secondary-text" />}
                       </button>
                       {openFaq === i && (
-                        <div className="px-6 pb-6 text-secondary-text font-medium leading-relaxed animate-fade-in border-t border-slate-100 pt-4">
+                        <div className="px-6 pb-6 text-secondary-text font-medium leading-relaxed tracking-tight animate-fade-in border-t border-slate-100/10 pt-4">
                           {faq.a}
                         </div>
                       )}
