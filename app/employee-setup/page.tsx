@@ -8,7 +8,7 @@ export default function EmployeeSetupPage() {
   const router = useRouter();
   
   const [lunaState, setLunaState] = useState<"idle" | "connecting" | "connected">("idle");
-  const [jiraState, setJiraState] = useState<"idle" | "connecting" | "connected">("idle");
+  const [jiraState, setJiraState] = useState<"idle" | "connecting" | "connected" | "error">("idle");
   const [hasConsented, setHasConsented] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
 
@@ -17,9 +17,18 @@ export default function EmployeeSetupPage() {
     setTimeout(() => setLunaState("connected"), 1200);
   };
 
-  const connectJira = () => {
+  const connectJira = async () => {
     setJiraState("connecting");
-    setTimeout(() => setJiraState("connected"), 1500);
+    try {
+      const response = await fetch('/api/jira');
+      if (!response.ok) {
+         throw new Error('Jira API connection failed.');
+      }
+      setJiraState("connected");
+    } catch (error) {
+       console.error(error);
+       setJiraState("error");
+    }
   };
 
   const handleFinish = () => {
@@ -96,13 +105,16 @@ export default function EmployeeSetupPage() {
                   Connected
                 </div>
               ) : (
-                <button
-                  onClick={connectJira}
-                  disabled={jiraState === "connecting"}
-                  className="bg-white/5 hover:bg-white/10 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 min-w-[100px] justify-center"
-                >
-                  {jiraState === "connecting" ? <Loader2 className="w-4 h-4 animate-spin" /> : "Connect"}
-                </button>
+                <div className="flex flex-col items-end gap-1">
+                  <button
+                    onClick={connectJira}
+                    disabled={jiraState === "connecting"}
+                    className="bg-white/5 hover:bg-white/10 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 min-w-[100px] justify-center"
+                  >
+                    {jiraState === "connecting" ? <Loader2 className="w-4 h-4 animate-spin" /> : (jiraState === "error" ? "Retry" : "Connect")}
+                  </button>
+                  {jiraState === "error" && <span className="text-red-400 text-xs text-right mt-1">Connection Refused: Missing Credentials</span>}
+                </div>
               )}
             </div>
 

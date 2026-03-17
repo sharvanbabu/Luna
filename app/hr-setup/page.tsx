@@ -7,18 +7,22 @@ import Link from "next/link";
 
 export default function HRSetupPage() {
   const router = useRouter();
-  const [isJiraConnecting, setIsJiraConnecting] = useState(false);
-  const [isJiraConnected, setIsJiraConnected] = useState(false);
+  const [jiraState, setJiraState] = useState<"idle" | "connecting" | "connected" | "error">("idle");
   const [email, setEmail] = useState("");
   const [employees, setEmployees] = useState("");
 
-  const handleJiraConnect = () => {
-    setIsJiraConnecting(true);
-    // Mocking an OAuth flow delay
-    setTimeout(() => {
-      setIsJiraConnecting(false);
-      setIsJiraConnected(true);
-    }, 1500);
+  const handleJiraConnect = async () => {
+    setJiraState("connecting");
+    try {
+       const response = await fetch('/api/jira');
+       if (!response.ok) {
+           throw new Error('Jira API connection failed.');
+       }
+       setJiraState("connected");
+    } catch (error) {
+       console.error(error);
+       setJiraState("error");
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -60,20 +64,23 @@ export default function HRSetupPage() {
                   </div>
                 </div>
                 
-                {isJiraConnected ? (
+                {jiraState === "connected" ? (
                   <div className="flex items-center gap-2 text-emerald-400 bg-emerald-400/10 px-3 py-1.5 rounded-lg text-sm font-medium">
                     <CheckCircle2 className="w-4 h-4" />
                     Connected
                   </div>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={handleJiraConnect}
-                    disabled={isJiraConnecting}
-                    className="bg-white/5 hover:bg-white/10 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50"
-                  >
-                    {isJiraConnecting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Connect"}
-                  </button>
+                  <div className="flex flex-col items-end gap-1">
+                    <button
+                      type="button"
+                      onClick={handleJiraConnect}
+                      disabled={jiraState === "connecting"}
+                      className="bg-white/5 hover:bg-white/10 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 min-w-[100px] justify-center"
+                    >
+                      {jiraState === "connecting" ? <Loader2 className="w-4 h-4 animate-spin" /> : (jiraState === "error" ? "Retry" : "Connect")}
+                    </button>
+                    {jiraState === "error" && <span className="text-red-400 text-xs text-right mt-1">Connection Refused: Missing Credentials</span>}
+                  </div>
                 )}
               </div>
             </div>
