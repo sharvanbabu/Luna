@@ -25,24 +25,24 @@ type WaitlistFormData = {
 };
 
 const challenges = [
-    { id: "Falling asleep", icon: "🌙", label: "Falling asleep faster", desc: "My mind won't shut off", color: "bg-blue-100" },
-    { id: "Stress", icon: "🧠", label: "Managing daily stress", desc: "Anxiety keeps me awake", color: "bg-purple-100" },
-    { id: "Quality", icon: "⚡", label: "Waking up energized", desc: "I always feel groggy", color: "bg-yellow-100" },
-    { id: "Irregular Schedule", icon: "⏰", label: "Fixing my schedule", desc: "Irregular sleep patterns", color: "bg-orange-100" }
-  ];
+  { id: "Falling asleep", icon: "🌙", label: "Falling asleep faster", desc: "My mind won't shut off", color: "bg-blue-100" },
+  { id: "Stress", icon: "🧠", label: "Managing daily stress", desc: "Anxiety keeps me awake", color: "bg-purple-100" },
+  { id: "Quality", icon: "⚡", label: "Waking up energized", desc: "I always feel groggy", color: "bg-yellow-100" },
+  { id: "Irregular Schedule", icon: "⏰", label: "Fixing my schedule", desc: "Irregular sleep patterns", color: "bg-orange-100" }
+];
 
-  const tabs = [
-      { title: "Insights", icon: <Brain className="w-5 h-5"/>, color: "text-blue-600", content: "Understand exactly how your daily habits and focus levels correlate with your deep sleep cycles. No more guessing." },
-      { title: "Routines", icon: <Activity className="w-5 h-5"/>, color: "text-purple-600", content: "Follow personalized wind-down and wake-up routines perfectly aligned to your natural circadian chronotype." },
-      { title: "Stress", icon: <Target className="w-5 h-5"/>, color: "text-orange-600", content: "Identify psychological stressors that disrupt your REM sleep and learn actionable techniques to clear your mind." }
-    ];
-  
-    const faqs = [
-      { q: "What is Luna?", a: "Luna is an AI-powered sleep intelligence platform designed specifically for professionals looking to optimize their deep sleep and daily energy." },
-      { q: "How does the Apple TestFlight beta work?", a: "Once you sign up for the waitlist, you'll be in line for our private beta. We'll send you an email with a secure Apple TestFlight link to install the app on your iOS device." },
-      { q: "Is my sleep data secure?", a: "Yes. Your privacy is our top priority. All health and intelligence data is encrypted and never sold to third parties." },
-      { q: "Why is it invite-only right now?", a: "We want to ensure a high-quality experience for early adopters. By limiting spots, we can work closely with our first 500 users to perfect the intelligence algorithms." }
-    ];
+const tabs = [
+  { title: "Insights", icon: <Brain className="w-5 h-5" />, color: "text-blue-600", content: "Understand exactly how your daily habits and focus levels correlate with your deep sleep cycles. No more guessing." },
+  { title: "Routines", icon: <Activity className="w-5 h-5" />, color: "text-purple-600", content: "Follow personalized wind-down and wake-up routines perfectly aligned to your natural circadian chronotype." },
+  { title: "Stress", icon: <Target className="w-5 h-5" />, color: "text-orange-600", content: "Identify psychological stressors that disrupt your REM sleep and learn actionable techniques to clear your mind." }
+];
+
+const faqs = [
+  { q: "What is Luna?", a: "Luna is an AI-powered sleep intelligence platform designed specifically for professionals looking to optimize their deep sleep and daily energy." },
+  { q: "How does the Apple TestFlight beta work?", a: "Once you sign up for the waitlist, you'll be in line for our private beta. We'll send you an email with a secure Apple TestFlight link to install the app on your iOS device." },
+  { q: "Is my sleep data secure?", a: "Yes. Your privacy is our top priority. All health and intelligence data is encrypted and never sold to third parties." },
+  { q: "Why is it invite-only right now?", a: "We want to ensure a high-quality experience for early adopters. By limiting spots, we can work closely with our first 500 users to perfect the intelligence algorithms." }
+];
 
 export default function LandingPage() {
   const { register, handleSubmit, formState: { errors, isSubmitting }, reset, setValue } = useForm<WaitlistFormData>();
@@ -65,20 +65,44 @@ export default function LandingPage() {
   const onSubmit = async (data: WaitlistFormData) => {
     try {
       setErrorMsg("");
-      // Simulating a minor delay for user experience
-      await new Promise(resolve => setTimeout(resolve, 500));
-      await addDoc(collection(db, "waitlist"), {
-        name: data.fullName,
-        email: data.email,
-        profession: data.profession,
-        age_range: data.ageRange,
-        sleep_challenge: data.sleepChallenge,
-        created_at: serverTimestamp(),
+      
+      await new Promise<void>((resolve, reject) => {
+        const timer = setTimeout(() => {
+          reject(new Error("Request timed out. Please check your connection."));
+        }, 8000);
+
+        const submitData = async () => {
+          await new Promise(r => setTimeout(r, 500)); // Simulating a minor delay for user experience
+          await addDoc(collection(db, "waitlist"), {
+            name: data.fullName,
+            email: data.email,
+            profession: data.profession,
+            age_range: data.ageRange,
+            sleep_challenge: data.sleepChallenge,
+            created_at: serverTimestamp(),
+          });
+        };
+
+        submitData()
+          .then(() => {
+            clearTimeout(timer);
+            resolve();
+          })
+          .catch((err) => {
+            clearTimeout(timer);
+            reject(err);
+          });
       });
+
       setSuccess(true);
       reset();
     } catch (error: any) {
-      setErrorMsg(error.message || "Failed to join waitlist. Try again.");
+      // Check for specific Firebase permission errors
+      if (error.code === 'permission-denied') {
+        setErrorMsg("Missing or insufficient permissions. The database rules are currently being updated. Please try again in a minute.");
+      } else {
+        setErrorMsg(error.message || "Failed to join waitlist. Try again.");
+      }
     }
   };
 
@@ -105,7 +129,7 @@ export default function LandingPage() {
           </Link>
           <nav className="hidden md:flex gap-8 text-sm font-medium text-secondary-text">
             <button onClick={() => scrollToSection('how-it-works')} className="hover:text-primary-text transition-colors">How it Works</button>
-            <button onClick={() => scrollToSection('science')} className="hover:text-primary-text transition-colors">Science</button>
+            <Link href="/research" className="hover:text-primary-text transition-colors">Science</Link>
             <button onClick={() => scrollToSection('early-access')} className="hover:text-primary-text transition-colors">Early Access</button>
             <Link href="/login" className="hover:text-primary-text transition-colors">Login</Link>
           </nav>
@@ -142,9 +166,11 @@ export default function LandingPage() {
         </div>
         <div className="mt-8 flex items-center justify-center gap-3">
           <div className="flex -space-x-2">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="w-8 h-8 rounded-full border-2 border-background bg-card flex items-center justify-center overflow-hidden">
-                <div className="w-full h-full bg-primary/20" />
+            {["https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSNVWa9_R7-nJD_hLsaK-b2fTrGyvumNkI2-g&s", "https://avatars.githubusercontent.com/u/26628788?v=4", "https://i1.rgstatic.net/ii/profile.image/11431281176037118-1690002890220_Q512/Swapna-Dande.jpg"].map(i => (
+              <div key={i} className="w-8 h-8 rounded-full border-2 overflow-clip border-background bg-card flex items-center justify-center overflow-hidden">
+                <div className="w-full h-full bg-primary/20 rounded-full overflow-clip">
+                  <img src={i} />
+                </div>
               </div>
             ))}
           </div>
@@ -156,10 +182,10 @@ export default function LandingPage() {
       <section className="py-12 border-y border-white/5 bg-background/50 backdrop-blur-sm relative z-10 w-full overflow-hidden flex flex-col items-center px-6">
         <p className="text-sm font-medium text-secondary-text uppercase tracking-widest mb-8">Early users improving their sleep with Luna</p>
         <div className="flex gap-12 md:gap-24 opacity-60 flex-wrap justify-center grayscale hover:grayscale-0 transition-all duration-700">
-          <div className="text-xl font-bold tracking-tighter">Linear</div>
-          <div className="text-xl font-bold tracking-tighter">Notion</div>
-          <div className="text-xl font-bold tracking-tighter">Calm</div>
-          <div className="text-xl font-bold tracking-tighter">Apple</div>
+          <div className="text-xl font-bold tracking-tighter">the ananta</div>
+          <div className="text-xl font-bold tracking-tighter">GITAM</div>
+          <div className="text-xl font-bold tracking-tighter">CHITTI</div>
+          <div className="text-xl font-bold tracking-tighter">Avni Tech</div>
         </div>
       </section>
 
@@ -257,84 +283,84 @@ export default function LandingPage() {
 
       <section className="py-24 px-6 container mx-auto">
         <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">The sleep app for every kind of night.</h2>
+          <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">The sleep app for every kind of night.</h2>
+        </div>
+        <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+
+          {/* Big Feature: Sleep Insights */}
+          <div className="bg-card border border-white/10 p-10 rounded-[32px] row-span-2 group relative overflow-hidden">
+            {/* Subtle background glow */}
+            <div className="absolute -top-24 -left-24 w-48 h-48 bg-primary/10 blur-[80px] rounded-full pointer-events-none" />
+
+            <div className="relative z-10">
+              <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
+                <BrainCircuit className="w-6 h-6 text-primary" />
+              </div>
+              <h3 className="text-2xl font-bold mb-3 group-hover:text-primary transition-colors text-white">Sleep Insights</h3>
+              <p className="text-secondary-text text-lg leading-relaxed">
+                Understand your sleep patterns implicitly, mapped intuitively with advanced metrics.
+              </p>
+
+              {/* Fixed Chart Visual */}
+              <div className="mt-6 h-48 bg-white/5 rounded-2xl border border-white/5 flex items-end p-6 gap-3">
+                {[40, 65, 45, 90, 55, 80, 70].map((h, i) => (
+                  <div
+                    key={i}
+                    className="w-full bg-gradient-to-t from-primary/40 to-primary rounded-t-md transition-all duration-500 group-hover:brightness-125"
+                    style={{ height: `${h}%` }}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
-  <div className="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
-    
-    {/* Big Feature: Sleep Insights */}
-    <div className="bg-card border border-white/10 p-10 rounded-[32px] row-span-2 group relative overflow-hidden">
-      {/* Subtle background glow */}
-      <div className="absolute -top-24 -left-24 w-48 h-48 bg-primary/10 blur-[80px] rounded-full pointer-events-none" />
-      
-      <div className="relative z-10">
-        <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
-          <BrainCircuit className="w-6 h-6 text-primary" />
-        </div>
-        <h3 className="text-2xl font-bold mb-3 group-hover:text-primary transition-colors text-white">Sleep Insights</h3>
-        <p className="text-secondary-text text-lg leading-relaxed">
-          Understand your sleep patterns implicitly, mapped intuitively with advanced metrics.
-        </p>
-        
-        {/* Fixed Chart Visual */}
-        <div className="mt-6 h-48 bg-white/5 rounded-2xl border border-white/5 flex items-end p-6 gap-3">
-          {[40, 65, 45, 90, 55, 80, 70].map((h, i) => (
-            <div 
-              key={i} 
-              className="w-full bg-gradient-to-t from-primary/40 to-primary rounded-t-md transition-all duration-500 group-hover:brightness-125" 
-              style={{ height: `${h}%` }} 
-            />
-          ))}
-        </div>
-      </div>
-    </div>
 
-    {/* Small Feature: Routine */}
-    <div className="bg-card border border-white/10 p-8g rounded-[32px] group hover:bg-white/[0.02] transition-colors">
-      <div className="flex flex-col items-start gap-5">
-        <div className="w-12 h-12 rounded-2xl bg-secondary/10 flex items-center justify-center shrink-0">
-          <Clock className="w-6 h-6 text-secondary" />
-        </div>
-        <div>
-          <h3 className="text-xl font-bold mb-2 group-hover:text-secondary transition-colors text-white">Personalized Routine</h3>
-          <p className="text-secondary-text leading-relaxed">Daily guidance crafted meticulously for healthier sleep habits.</p>
-        </div>
-      </div>
-    </div>
+          {/* Small Feature: Routine */}
+          <div className="bg-card border border-white/10 p-8 rounded-[32px] group hover:bg-white/[0.02] transition-colors">
+            <div className="flex flex-col items-start gap-5">
+              <div className="w-12 h-12 rounded-2xl bg-secondary/10 flex items-center justify-center shrink-0">
+                <Clock className="w-6 h-6 text-secondary" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold mb-2 group-hover:text-secondary transition-colors text-white">Personalized Routine</h3>
+                <p className="text-secondary-text leading-relaxed">Daily guidance crafted meticulously for healthier sleep habits.</p>
+              </div>
+            </div>
+          </div>
 
-    {/* Small Feature: Stress */}
-    <div className="bg-card border border-white/10 p-8 rounded-[32px] group hover:bg-white/[0.02] transition-colors">
-      <div className="flex flex-col items-start gap-5">
-        <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
-          <Activity className="w-6 h-6 text-primary" />
-        </div>
-        <div>
-          <h3 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors text-white">Stress Awareness</h3>
-          <p className="text-secondary-text leading-relaxed">Identify psychological patterns affecting deep recovery.</p>
-        </div>
-      </div>
-    </div>
+          {/* Small Feature: Stress */}
+          <div className="bg-card border border-white/10 p-8 rounded-[32px] group hover:bg-white/[0.02] transition-colors">
+            <div className="flex flex-col items-start gap-5">
+              <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+                <Activity className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors text-white">Stress Awareness</h3>
+                <p className="text-secondary-text leading-relaxed">Identify psychological patterns affecting deep recovery.</p>
+              </div>
+            </div>
+          </div>
 
-    {/* Wide Feature: Circadian */}
-    <div className="bg-card border border-white/10 p-10 rounded-[32px] md:col-span-2 flex flex-col md:flex-row items-center justify-between gap-8 group relative overflow-hidden">
-       <div className="absolute right-0 top-0 w-64 h-full bg-secondary/5 blur-[100px] pointer-events-none" />
-       <div className="relative z-10">
-        <h3 className="text-2xl font-bold mb-3 group-hover:text-secondary transition-colors text-white">Circadian Rhythm Guidance</h3>
-        <p className="text-secondary-text text-lg max-w-xl">Align your biological body clock naturally with modern demands using light-exposure tracking.</p>
-      </div>
-      <div className="relative shrink-0">
-        <div className="w-24 h-24 rounded-full border-[4px] border-secondary/10 border-t-secondary animate-[spin_8s_linear_infinite]" />
-        <Moon className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 text-secondary" />
-      </div>
-    </div>
-  </div>
-</section>
+          {/* Wide Feature: Circadian */}
+          <div className="bg-card border border-white/10 p-10 rounded-[32px] md:col-span-2 flex flex-col md:flex-row items-center justify-between gap-8 group relative overflow-hidden">
+            <div className="absolute right-0 top-0 w-64 h-full bg-secondary/5 blur-[100px] pointer-events-none" />
+            <div className="relative z-10">
+              <h3 className="text-2xl font-bold mb-3 group-hover:text-secondary transition-colors text-white">Circadian Rhythm Guidance</h3>
+              <p className="text-secondary-text text-lg max-w-xl">Align your biological body clock naturally with modern demands using light-exposure tracking.</p>
+            </div>
+            <div className="relative shrink-0">
+              <div className="w-24 h-24 rounded-full border-[4px] border-secondary/10 border-t-secondary animate-[spin_8s_linear_infinite]" />
+              <Moon className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 text-secondary" />
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Science Section */}
       <section id="science" className="py-24 px-6 container mx-auto border-y border-white/5">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-5xl font-semibold tracking-tight">Built on sleep science.</h2>
         </div>
-        <div className="grid md:grid-cols-3 gap-6 w-max mx-auto">
+        <div className="grid md:grid-cols-3 gap-6 w-max mx-auto mb-12">
           {[
             // { title: "Circadian rhythm research", icon: <Sun className="w-5 h-5 text-primary" /> },
             { title: "Sleep & cognitive performance", icon: <BrainCircuit className="w-5 h-5 text-secondary" /> },
@@ -347,6 +373,11 @@ export default function LandingPage() {
             </div>
           ))}
         </div>
+        <div className="text-center">
+          <Link href="/research" className="inline-flex items-center gap-2 bg-white text-background px-8 py-4 rounded-full font-medium hover:scale-105 transition-all text-sm shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+            Explore Our Research <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
       </section>
 
       {/* INTERACTIVE SELF-SELECTION (The Micro-Commitment) */}
@@ -358,8 +389,8 @@ export default function LandingPage() {
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
           {challenges.map((item, i) => (
-            <button 
-              key={i} 
+            <button
+              key={i}
               onClick={() => handleChallengeClick(item.id)}
               className="bg-card border-2 border-transparent hover:border-primary/20 p-8 rounded-[32px] shadow-soft flex flex-col items-center text-center transition-all hover:-translate-y-2 group"
             >
@@ -376,20 +407,22 @@ export default function LandingPage() {
       {/* LAYERED SOCIAL PROOF */}
       <section className="py-24 px-6 container mx-auto text-center">
         <h2 className="text-2xl md:text-4xl font-bold tracking-tight mb-16">Members are enjoying happier and healthier mornings.</h2>
-        
+
         <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto mb-20">
           {[
-            { text: "Since using Luna, my HRV has gone up by 20% and I actually wake up before my alarm.", author: "Sarah J.", role: "Product Manager" },
-            { text: "The personalized wind-down routines broke my habit of doomscrolling in bed. Highly recommend.", author: "Mark T.", role: "Software Engineer" },
-            { text: "I never realized how much my inconsistent schedule was hurting my deep sleep until Luna showed me.", author: "Elena R.", role: "Startup Founder" }
+            { text: "Since using Luna, my HRV has gone up by 20% and I actually wake up before my alarm.", author: "Bala Tripura Sundari", role: "Product Manager", image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSNVWa9_R7-nJD_hLsaK-b2fTrGyvumNkI2-g&s" },
+            { text: "The personalized wind-down routines broke my habit of doomscrolling in bed. Highly recommend.", author: "Sampath Balivada", role: "Software Engineer", image: "https://avatars.githubusercontent.com/u/26628788?v=4" },
+            { text: "I never realized how much my inconsistent schedule was hurting my deep sleep until Luna showed me.", author: "Swapna Dande", role: "Startup Founder", image: "https://i1.rgstatic.net/ii/profile.image/11431281176037118-1690002890220_Q512/Swapna-Dande.jpg" }
           ].map((review, i) => (
             <div key={i} className="bg-card/10 p-8 rounded-3xl shadow-soft border-2 border-slate-100/10 text-left relative">
               <div className="flex text-accent mb-4">
-                {[1,2,3,4,5].map(star => <Star key={star} className="w-5 h-5 fill-amber-500 stroke-0 border-none" />)}
+                {[1, 2, 3, 4, 5].map(star => <Star key={star} className="w-5 h-5 fill-amber-500 stroke-0 border-none" />)}
               </div>
               <p className="text-primary-text font-medium text-lg mb-6 leading-relaxed">"{review.text}"</p>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-slate-200/20" />
+                <div className="w-10 h-10 rounded-full overflow-clip bg-slate-200/20">
+                  <img src={review.image} alt={review.author} />
+                </div>
                 <div>
                   <div className="font-bold text-sm">{review.author}</div>
                   <div className="text-xs text-secondary-text">{review.role}</div>
@@ -398,7 +431,7 @@ export default function LandingPage() {
             </div>
           ))}
         </div>
-        </section>
+      </section>
 
       {/* Early Access / Waitlist Form Section */}
       <section ref={formRef} id="early-access" className="py-32 px-6 container mx-auto relative">
@@ -449,18 +482,18 @@ export default function LandingPage() {
                 />
               </div>
 
-              
+
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                <label className="block text-sm font-medium mb-1.5 text-secondary-text">Profession</label>
-                <input
-                  type="text"
-                  placeholder="Product Manager"
-                  className="w-full bg-[#1A2333]/50 border border-white/5 rounded-xl px-4 py-3 placeholder-white/20 text-white focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all shadow-inner"
-                  {...register("profession", { required: "Profession is required" })}
-                />
-              </div>
+                  <label className="block text-sm font-medium mb-1.5 text-secondary-text">Profession</label>
+                  <input
+                    type="text"
+                    placeholder="Product Manager"
+                    className="w-full bg-[#1A2333]/50 border border-white/5 rounded-xl px-4 py-3 placeholder-white/20 text-white focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all shadow-inner"
+                    {...register("profession", { required: "Profession is required" })}
+                  />
+                </div>
                 <div>
                   <label className="block text-sm font-medium mb-1.5 text-secondary-text">Age Range</label>
                   <select
@@ -475,21 +508,21 @@ export default function LandingPage() {
                     <option value="55+" className="bg-card">55+</option>
                   </select>
                 </div>
-                
+
               </div>
-<div>
-                  <label className="block text-sm font-medium mb-1.5 text-secondary-text">Sleep Challenge</label>
-                  <select
-                    className="w-full bg-[#1A2333]/50 border border-white/5 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all appearance-none shadow-inner"
-                    {...register("sleepChallenge", { required: "Required" })}
-                  >
-                    <option value="" className="bg-card">Select</option>
-                    <option value="Stress" className="bg-card">Stress</option>
-                    <option value="Falling Asleep" className="bg-card">Falling asleep</option>
-                    <option value="Irregular Schedule" className="bg-card">Schedule</option>
-                    <option value="Quality" className="bg-card">Low Quality</option>
-                  </select>
-                </div>
+              <div>
+                <label className="block text-sm font-medium mb-1.5 text-secondary-text">Sleep Challenge</label>
+                <select
+                  className="w-full bg-[#1A2333]/50 border border-white/5 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all appearance-none shadow-inner"
+                  {...register("sleepChallenge", { required: "Required" })}
+                >
+                  <option value="" className="bg-card">Select</option>
+                  <option value="Stress" className="bg-card">Stress</option>
+                  <option value="Falling Asleep" className="bg-card">Falling asleep</option>
+                  <option value="Irregular Schedule" className="bg-card">Schedule</option>
+                  <option value="Quality" className="bg-card">Low Quality</option>
+                </select>
+              </div>
               {/* {Object.keys(errors).length > 0 && <p className="text-red-400 text-xs mt-2 flex items-center gap-1"><AlertCircle className="w-3 h-3"/> Please fill out all required fields.</p>} */}
               {errorMsg && <p className="text-red-400 text-sm mt-2">{errorMsg}</p>}
 
@@ -513,29 +546,29 @@ export default function LandingPage() {
       </section>
 
       {/* FAQ ACCORDION (Objection Handling) */}
-            <section className="py-24 px-6 container mx-auto">
-              <div className="max-w-3xl mx-auto">
-                <h2 className="text-3xl md:text-5xl font-bold tracking-tighter mb-12 text-center">Frequently asked questions</h2>
-                <div className="space-y-4">
-                  {faqs.map((faq, i) => (
-                    <div key={i} className="border border-slate-200/10 rounded-2xl bg-slate-800/30 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                      <button 
-                        onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                        className="w-full text-left p-6 font-bold tracking-tighter text-lg flex items-center justify-between"
-                      >
-                        {faq.q}
-                        {openFaq === i ? <ChevronUp className="w-5 h-5 text-secondary-text" /> : <ChevronDown className="w-5 h-5 text-secondary-text" />}
-                      </button>
-                      {openFaq === i && (
-                        <div className="px-6 pb-6 text-secondary-text font-medium leading-relaxed tracking-tight animate-fade-in border-t border-slate-100/10 pt-4">
-                          {faq.a}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
+      <section className="py-24 px-6 container mx-auto">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-3xl md:text-5xl font-bold tracking-tighter mb-12 text-center">Frequently asked questions</h2>
+          <div className="space-y-4">
+            {faqs.map((faq, i) => (
+              <div key={i} className="border border-slate-200/10 rounded-2xl bg-slate-800/30 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                <button
+                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                  className="w-full text-left p-6 font-bold tracking-tighter text-lg flex items-center justify-between"
+                >
+                  {faq.q}
+                  {openFaq === i ? <ChevronUp className="w-5 h-5 text-secondary-text" /> : <ChevronDown className="w-5 h-5 text-secondary-text" />}
+                </button>
+                {openFaq === i && (
+                  <div className="px-6 pb-6 text-secondary-text font-medium leading-relaxed tracking-tight animate-fade-in border-t border-slate-100/10 pt-4">
+                    {faq.a}
+                  </div>
+                )}
               </div>
-            </section>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* Final CTA Section */}
       <section className="py-32 px-6 container mx-auto text-center border-t border-white/5">
@@ -558,7 +591,7 @@ export default function LandingPage() {
           <div className="flex flex-wrap justify-center gap-8 text-sm text-secondary-text">
             <button onClick={() => window.scrollTo(0, 0)} className="hover:text-white transition-colors">Home</button>
             <button onClick={() => scrollToSection('how-it-works')} className="hover:text-white transition-colors">How it Works</button>
-            <button onClick={() => scrollToSection('science')} className="hover:text-white transition-colors">Research</button>
+            <Link href="/research" className="hover:text-white transition-colors">Research</Link>
             <button onClick={() => scrollToSection('early-access')} className="hover:text-white transition-colors">Beta Program</button>
             <Link href="/contact" className="hover:text-white transition-colors">Contact</Link>
           </div>

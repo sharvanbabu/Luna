@@ -5,19 +5,28 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Mail, Lock, LogIn, AlertCircle } from "lucide-react";
-import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, OAuthProvider } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 
 export default function LoginPage() {
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm();
   const [errorMsg, setErrorMsg] = useState("");
+  const [role, setRole] = useState<"hr" | "employee">("employee");
   const router = useRouter();
+
+  const handleRedirect = () => {
+    if (role === "hr") {
+      router.push("/hr-setup");
+    } else {
+      router.push("/employee-setup");
+    }
+  };
 
   const onSubmit = async (data: any) => {
     try {
       setErrorMsg("");
       await signInWithEmailAndPassword(auth, data.email, data.password);
-      router.push("/dashboard");
+      handleRedirect();
     } catch (error: any) {
       setErrorMsg(error.message || "Failed to log in.");
     }
@@ -28,9 +37,20 @@ export default function LoginPage() {
       setErrorMsg("");
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
-      router.push("/dashboard");
+      handleRedirect();
     } catch (error: any) {
       setErrorMsg(error.message || "Failed to sign in with Google.");
+    }
+  };
+
+  const signInWithApple = async () => {
+    try {
+      setErrorMsg("");
+      const provider = new OAuthProvider('apple.com');
+      await signInWithPopup(auth, provider);
+      handleRedirect();
+    } catch (error: any) {
+      setErrorMsg(error.message || "Failed to sign in with Apple.");
     }
   };
 
@@ -59,9 +79,24 @@ export default function LoginPage() {
           <h1 className="text-2xl font-medium tracking-tight text-white mb-2">Welcome back</h1>
           <p className="text-secondary-text mb-8 text-sm">Log in to access your sleep intelligence dashboard.</p>
           
+          <div className="flex bg-[#1A2333]/50 p-1 rounded-xl mb-8">
+            <button
+              onClick={() => setRole("employee")}
+              className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${role === "employee" ? "bg-primary text-white shadow-md" : "text-secondary-text hover:text-white"}`}
+            >
+              Employee
+            </button>
+            <button
+              onClick={() => setRole("hr")}
+              className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${role === "hr" ? "bg-primary text-white shadow-md" : "text-secondary-text hover:text-white"}`}
+            >
+              HR Admin
+            </button>
+          </div>
+          
           <button
             onClick={signInWithGoogle}
-            className="w-full bg-white text-background font-medium py-3 rounded-xl hover:bg-gray-200 transition-all flex items-center justify-center gap-3 shadow-lg hover:scale-[1.02] active:scale-[0.98] mb-8 text-sm"
+            className="w-full bg-white text-background font-medium py-3 rounded-xl hover:bg-gray-200 transition-all flex items-center justify-center gap-3 shadow-lg hover:scale-[1.02] active:scale-[0.98] mb-3 text-sm"
           >
             <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -70,6 +105,16 @@ export default function LoginPage() {
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
             </svg>
             Sign in with Google
+          </button>
+          
+          <button
+            onClick={signInWithApple}
+            className="w-full bg-[#1A2333]/50 text-white font-medium py-3 rounded-xl hover:bg-[#1A2333] border border-white/10 transition-all flex items-center justify-center gap-3 shadow-lg hover:scale-[1.02] active:scale-[0.98] mb-8 text-sm"
+          >
+            <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
+              <path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.12 3.833 3.069 1.57-.051 2.167-.998 4.074-.998 1.895 0 2.455.998 4.102.96 1.685-.04 2.704-1.523 3.692-2.955 1.146-1.674 1.625-3.298 1.652-3.385-.038-.016-3.181-1.221-3.21-4.857-.026-3.04 2.484-4.505 2.597-4.577-1.446-2.115-3.693-2.4-4.49-2.458-1.954-.153-3.83 1.144-4.848 1.144zm-1.09-2.978c.854-1.033 1.428-2.469 1.272-3.918-1.238.05-2.736.825-3.626 1.868-.797.925-1.488 2.39-1.306 3.805 1.385.107 2.756-.713 3.66-1.755z" />
+            </svg>
+            Sign in with Apple
           </button>
 
           <div className="flex items-center gap-4 mb-8">
