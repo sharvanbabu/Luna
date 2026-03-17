@@ -1,44 +1,37 @@
 import { NextResponse } from 'next/server';
 import axios from 'axios';
+import { cookies } from 'next/headers';
 
-// Note: To use this in production, you must set these environment variables in your Hosting dashboard:
-// JIRA_DOMAIN (e.g., yourcompany.atlassian.net)
-// JIRA_EMAIL (your Atlassian account email)
-// JIRA_API_TOKEN (generated from Atlassian security settings)
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   try {
-    const domain = process.env.JIRA_DOMAIN;
-    const email = process.env.JIRA_EMAIL;
-    const apiToken = process.env.JIRA_API_TOKEN;
+    const accessToken = cookies().get('atlassian_access_token')?.value;
+    const cloudId = cookies().get('atlassian_cloud_id')?.value;
 
-    if (!domain || !email || !apiToken) {
+    if (!accessToken || !cloudId) {
       return NextResponse.json(
-        { error: "Jira API configuration is missing. Please add JIRA_DOMAIN, JIRA_EMAIL, and JIRA_API_TOKEN to your environment variables." },
-        { status: 500 }
+        { error: "Jira API configuration is missing. Please authenticate via Atlassian OAuth." },
+        { status: 401 }
       );
     }
 
-    // Using Basic Auth as required by Jira REST API
-    const authHeader = `Basic ${Buffer.from(`${email}:${apiToken}`).toString('base64')}`;
-
     // This JQL query fetches issues assigned to the current user that are unresolved
-    // You can customize the JQL from the frontend by accepting a query param if needed. 
     const jqlConfig = `assignee=currentUser() AND resolution=Unresolved`;
 
-    const response = await axios.get(`https://${domain}/rest/api/3/search`, {
+    // Fetch issues using proxy URL and OAuth Bearer token
+    const response = await axios.get(`https://api.atlassian.com/ex/jira/${cloudId}/rest/api/3/search`, {
        params: {
           jql: jqlConfig,
           maxResults: 50,
           fields: "summary,status,duedate,priority"
        },
        headers: {
-          'Authorization': authHeader,
+          'Authorization': `Bearer ${accessToken}`,
           'Accept': 'application/json'
        }
     });
 
-    // Formatting response to match what the HR dashboard mock metric logic might eventually expect
     const issues = response.data.issues.map((issue: any) => ({
        id: issue.id,
        key: issue.key,

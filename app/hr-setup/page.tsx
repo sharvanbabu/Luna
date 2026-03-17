@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Building2, Users, ArrowRight, CheckCircle2, Loader2, Link as LinkIcon } from "lucide-react";
 import Link from "next/link";
@@ -11,18 +11,21 @@ export default function HRSetupPage() {
   const [email, setEmail] = useState("");
   const [employees, setEmployees] = useState("");
 
-  const handleJiraConnect = async () => {
-    setJiraState("connecting");
-    try {
-       const response = await fetch('/api/jira');
-       if (!response.ok) {
-           throw new Error('Jira API connection failed.');
-       }
-       setJiraState("connected");
-    } catch (error) {
-       console.error(error);
-       setJiraState("error");
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      const jiraParam = urlParams.get('jira');
+      if (jiraParam === 'connected') {
+        setJiraState("connected");
+      } else if (jiraParam === 'error') {
+        setJiraState("error");
+      }
     }
+  }, []);
+
+  const handleJiraConnect = () => {
+    setJiraState("connecting");
+    window.location.href = '/api/auth/atlassian';
   };
 
   const handleSubmit = (e: React.FormEvent) => {
