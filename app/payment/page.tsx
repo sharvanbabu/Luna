@@ -17,11 +17,15 @@ function SubscriptionPlans() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const email = searchParams.get("email") || "admin@company.com";
+  const employees = parseInt(searchParams.get("employees") || "1", 10);
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState("1m");
   const [isScriptLoaded, setIsScriptLoaded] = useState(false);
+
+  const selectedPlan = PLANS.find((p) => p.id === selectedPlanId) || PLANS[0];
+  const totalAmount = selectedPlan.priceINR * employees;
 
   const handleBuy = async () => {
     if (!isScriptLoaded) {
@@ -30,11 +34,9 @@ function SubscriptionPlans() {
     }
 
     setIsProcessing(true);
-    const selectedPlan = PLANS.find((p) => p.id === selectedPlanId);
-    if (!selectedPlan) return;
     
     // Amount must be passed in paise to the Razorpay API
-    const amountInPaise = selectedPlan.priceINR * 100;
+    const amountInPaise = totalAmount * 100;
 
     try {
       // 1. Create order ID remotely via Node Razorpay SDK
@@ -136,7 +138,7 @@ function SubscriptionPlans() {
               }`}
             >
               <div className="text-secondary-text text-sm font-medium mb-2">{plan.title}</div>
-              <div className="text-3xl font-semibold text-white mb-2">₹{plan.priceINR}</div>
+              <div className="text-3xl font-semibold text-white mb-2">₹{plan.priceINR} <span className="text-sm text-secondary-text font-normal">/user</span></div>
               <div className="text-xs text-secondary-text/80 leading-relaxed mt-auto pr-6">{plan.description}</div>
               
               {selectedPlanId === plan.id && (
@@ -149,15 +151,20 @@ function SubscriptionPlans() {
         </div>
 
         <div className="flex flex-col items-center w-full max-w-sm">
+          <div className="flex justify-between items-center w-full mb-6 text-sm">
+             <span className="text-secondary-text">Number of Employees:</span>
+             <span className="text-white font-medium">{employees}</span>
+          </div>
+
           <button
             onClick={handleBuy}
             disabled={isProcessing}
             className="w-full bg-primary hover:bg-primary/90 text-white font-medium py-4 rounded-xl transition-all shadow-lg hover:shadow-[0_0_20px_rgba(124,140,255,0.4)] hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-50 disabled:hover:translate-y-0 disabled:shadow-none flex items-center justify-center gap-2 text-sm"
           >
             {isProcessing ? (
-              <><Loader2 className="w-5 h-5 animate-spin" /> Preparing Secure Checkout...</>
+              <><Loader2 className="w-5 h-5 animate-spin" /> Preparing Checkout...</>
             ) : (
-              <><ShieldCheck className="w-5 h-5" /> Pay Now with Razorpay</>
+              <><ShieldCheck className="w-5 h-5" /> Pay ₹{totalAmount.toLocaleString('en-IN')} with Razorpay</>
             )}
           </button>
           <div className="mt-4 text-xs text-secondary-text/60 text-center flex items-center justify-center gap-1.5 font-medium">
