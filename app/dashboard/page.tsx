@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { 
   LayoutDashboard, Moon, Activity, User, LogOut, 
-  TrendingUp, ArrowUpRight, ChevronRight, Menu, X, Info, Users, Plus, AlertTriangle
+  TrendingUp, ArrowUpRight, ChevronRight, Menu, X, Info, Users, Plus, AlertTriangle, 
+  Flame, Zap, BarChart3, Pill, ShieldCheck, HeartPulse
 } from "lucide-react";
 import { 
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, 
@@ -14,8 +15,8 @@ import {
 
 import { 
   mockEmployees, 
-  calculateStressScore, 
-  getStressLevel,
+  calculateAdvancedStressFactors, 
+  getBurnoutStatus,
   type Employee
 } from "@/lib/mockData";
 
@@ -25,6 +26,7 @@ export default function DashboardPage() {
   const [employees, setEmployees] = useState<Employee[]>(mockEmployees);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
+  const [activeTab, setActiveTab] = useState<"overview" | "analytics">("overview");
 
   const handleLogout = () => {
     router.push("/");
@@ -42,10 +44,16 @@ export default function DashboardPage() {
         name: inviteEmail.split('@')[0],
         email: inviteEmail,
         status: "pending",
+        department: "Engineering", 
         avgSleepScore: 0,
         avgSleepHours: 0,
-        tasksAssigned: 0,
-        tasksCompleted: 0,
+        recoveryPercentage: 0,
+        circadianAlignment: 0,
+        sprintPointsTotal: 0,
+        sprintPointsDone: 0,
+        daysRemaining: 0,
+        uniqueTicketsTouched24h: 0,
+        afterHoursSignals: 0,
         overdueTasks: 0,
       }
     ]);
@@ -59,19 +67,50 @@ export default function DashboardPage() {
   // Aggregate Metrics
   const totalEmployees = employees.length;
   const activeCount = connectedEmployees.length;
-  const totalStress = connectedEmployees.reduce((acc, emp) => acc + calculateStressScore(emp), 0);
-  const avgStress = activeCount > 0 ? Math.round(totalStress / activeCount) : 0;
   
-  const highRiskCount = connectedEmployees.filter(e => calculateStressScore(e) >= 65).length;
+  const employeeStats = connectedEmployees.map(emp => ({
+    ...emp,
+    factors: calculateAdvancedStressFactors(emp)
+  }));
+
+  const avgStress = activeCount > 0 
+    ? Math.round(employeeStats.reduce((acc, emp) => acc + emp.factors.workloadStress, 0) / activeCount) 
+    : 0;
+
+  const avgRecovery = activeCount > 0
+    ? Math.round(connectedEmployees.reduce((acc, emp) => acc + emp.recoveryPercentage, 0) / activeCount)
+    : 0;
+  
+  const highRiskCount = employeeStats.filter(e => e.factors.totalBurnoutRisk >= 75).length;
   const avgSleep = activeCount > 0 
     ? (connectedEmployees.reduce((acc, emp) => acc + emp.avgSleepHours, 0) / activeCount).toFixed(1)
     : 0;
 
+  // Departmental Data for Heatmap
+  const departments = ["Engineering", "Product", "Sales", "Design", "Operations"];
+  const departmentStats = departments.map(dept => {
+    const deptEmps = employeeStats.filter(e => e.department === dept);
+    const avgRisk = deptEmps.length > 0 
+      ? Math.round(deptEmps.reduce((acc, e) => acc + e.factors.totalBurnoutRisk, 0) / deptEmps.length) 
+      : 0;
+    return { name: dept, risk: avgRisk, count: deptEmps.length };
+  });
+
+  const chartData = [
+    { name: "Mon", stress: 45, recovery: 70 },
+    { name: "Tue", stress: 52, recovery: 65 },
+    { name: "Wed", stress: 68, recovery: 45 },
+    { name: "Thu", stress: 85, recovery: 32 },
+    { name: "Fri", stress: 72, recovery: 48 },
+    { name: "Sat", stress: 30, recovery: 85 },
+    { name: "Sun", stress: 25, recovery: 92 },
+  ];
+
   const navItems = [
-    { icon: <LayoutDashboard className="w-4 h-4" />, label: "Org Overview", active: true },
-    { icon: <Users className="w-4 h-4" />, label: "Directory", active: false },
-    { icon: <Activity className="w-4 h-4" />, label: "Analytics", active: false },
-    { icon: <User className="w-4 h-4" />, label: "Settings", active: false }
+    { icon: <LayoutDashboard className="w-4 h-4" />, label: "Org Overview", id: "overview" },
+    { icon: <BarChart3 className="w-4 h-4" />, label: "Burnout Analytics", id: "analytics" },
+    { icon: <Users className="w-4 h-4" />, label: "Directory", id: "directory" },
+    { icon: <User className="w-4 h-4" />, label: "Settings", id: "settings" }
   ];
 
 // Intentionally empty logic removed below
@@ -88,7 +127,11 @@ export default function DashboardPage() {
         </div>
         <nav className="flex-1 py-8 px-4 space-y-1">
           {navItems.map((item, i) => (
-            <button key={i} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-sm ${item.active ? "bg-card border border-white/5 text-primary font-medium shadow-lg" : "text-secondary-text hover:text-white hover:bg-white/5"}`}>
+            <button 
+              key={i} 
+              onClick={() => (item.id === "overview" || item.id === "analytics") && setActiveTab(item.id as any)}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-sm ${activeTab === item.id ? "bg-card border border-white/5 text-primary font-medium shadow-lg" : "text-secondary-text hover:text-white hover:bg-white/5"}`}
+            >
               {item.icon}
               {item.label}
             </button>
@@ -122,7 +165,14 @@ export default function DashboardPage() {
           <div className="md:hidden absolute inset-0 top-16 bg-background/95 backdrop-blur-xl z-50 flex flex-col animate-fade-in border-t border-white/5">
             <nav className="flex-1 py-6 px-4 space-y-1">
               {navItems.map((item, i) => (
-                <button key={i} className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl transition-all ${item.active ? "bg-card border border-white/5 text-primary font-medium" : "text-secondary-text"}`}>
+                <button 
+                  key={i} 
+                  onClick={() => {
+                    (item.id === "overview" || item.id === "analytics") && setActiveTab(item.id as any);
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl transition-all ${activeTab === item.id ? "bg-card border border-white/5 text-primary font-medium" : "text-secondary-text"}`}
+                >
                   {item.icon}
                   <span className="text-base">{item.label}</span>
                 </button>
@@ -140,8 +190,14 @@ export default function DashboardPage() {
         <div className="flex-1 overflow-y-auto p-6 md:p-10 z-10 w-full max-w-7xl mx-auto">
           <header className="mb-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fade-in">
             <div>
-              <h1 className="text-2xl font-medium tracking-tight text-white mb-1">Organization Overview</h1>
-              <p className="text-secondary-text text-sm">Monitor workforce stress analytics and burnout risks.</p>
+              <h1 className="text-2xl font-medium tracking-tight text-white mb-1">
+                {activeTab === "overview" ? "Organization Overview" : "Burnout Analytics"}
+              </h1>
+              <p className="text-secondary-text text-sm">
+                {activeTab === "overview" 
+                  ? "Monitor workforce stress analytics and burnout risks." 
+                  : "Cross-correlating Jira activity with Luna sleep intelligence."}
+              </p>
             </div>
             <button 
               onClick={() => setIsInviteModalOpen(true)}
@@ -173,32 +229,47 @@ export default function DashboardPage() {
               {/* Top KPI Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 
-                {/* Active Employees */}
+                {/* Avg Burnout Risk */}
                 <div className="bg-card border border-white/5 rounded-2xl p-5 shadow-lg group hover:border-white/10 transition-all">
                   <div className="flex justify-between items-start mb-4">
                     <h3 className="text-secondary-text text-xs font-medium flex items-center gap-2">
-                       Active Connections
+                       Avg Burnout Risk
                     </h3>
-                    <Users className="w-4 h-4 text-secondary-text/50" />
+                    <Flame className="w-4 h-4 text-orange-400" />
                   </div>
                   <div className="flex items-end gap-2">
-                    <div className="text-3xl font-semibold text-white">{activeCount}</div>
-                    <div className="text-secondary-text text-sm pb-1">/ {totalEmployees} total</div>
+                    <div className="text-3xl font-semibold text-white">{Math.round((avgStress * 0.6) + ((100 - avgRecovery) * 0.4))}</div>
+                    <div className="text-orange-400/80 text-xs pb-1 font-medium">Elevated</div>
                   </div>
                 </div>
 
-                {/* Avg Org Stress */}
+                {/* Avg Workload Stress */}
                 <div className="bg-card border border-white/5 rounded-2xl p-5 shadow-lg relative overflow-hidden group hover:border-white/10 transition-all">
                   <div className="absolute right-0 top-0 w-24 h-24 bg-primary/10 blur-2xl rounded-full" />
                   <div className="flex justify-between items-start mb-4 relative z-10">
                     <h3 className="text-secondary-text text-xs font-medium flex items-center gap-2">
-                       Avg Org Stress
+                       Workload Stress
                     </h3>
-                    <Activity className="w-4 h-4 text-primary" />
+                    <Zap className="w-4 h-4 text-primary" />
                   </div>
                   <div className="flex items-end gap-3 relative z-10">
                     <div className="text-3xl font-semibold text-white tracking-tighter">{avgStress}</div>
-                    <div className="text-secondary-text text-xs pb-1">{getStressLevel(avgStress).label}</div>
+                    <div className="text-secondary-text text-xs pb-1">Jira Signals</div>
+                  </div>
+                </div>
+
+                {/* Avg Recovery */}
+                <div className="bg-card border border-white/5 rounded-2xl p-5 shadow-lg relative overflow-hidden group">
+                  <div className="absolute right-0 bottom-0 w-24 h-24 bg-emerald-500/10 blur-2xl rounded-full" />
+                  <div className="flex justify-between items-start mb-4 relative z-10">
+                    <h3 className="text-secondary-text text-xs font-medium flex items-center gap-2">
+                       Luna Recovery
+                    </h3>
+                    <Moon className="w-4 h-4 text-emerald-400" />
+                  </div>
+                  <div className="flex items-end gap-3 relative z-10">
+                    <div className="text-3xl font-semibold text-white tracking-tighter">{avgRecovery}%</div>
+                    <div className="text-emerald-400 text-xs pb-1 font-medium">Healthy</div>
                   </div>
                 </div>
 
@@ -207,103 +278,190 @@ export default function DashboardPage() {
                   <div className="absolute right-0 bottom-0 w-24 h-24 bg-red-500/10 blur-2xl rounded-full" />
                   <div className="flex justify-between items-start mb-4 relative z-10">
                     <h3 className="text-secondary-text text-xs font-medium flex items-center gap-2">
-                       High Risk Employees
+                       Burnout Alerts
                     </h3>
-                    <AlertTriangle className="w-4 h-4 text-red-400" />
+                    <AlertTriangle className="w-4 h-4 text-red-500" />
                   </div>
                   <div className="text-3xl font-semibold text-white relative z-10">{highRiskCount}</div>
                   {highRiskCount > 0 && <p className="text-xs text-red-400 mt-2 relative z-10">Immediate action recommended.</p>}
                 </div>
+              </div>
 
-                {/* Avg Sleep */}
-                <div className="bg-card border border-white/5 rounded-2xl p-5 shadow-lg group hover:border-white/10 transition-all">
-                  <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-secondary-text text-xs font-medium flex items-center gap-2">
-                       Avg Organization Sleep
-                    </h3>
-                    <Moon className="w-4 h-4 text-secondary-text/50" />
+              {activeTab === "analytics" && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10 animate-slide-up">
+                  {/* Organizational Balance Chart */}
+                  <div className="bg-card border border-white/5 rounded-3xl p-6 shadow-xl">
+                    <div className="flex items-center justify-between mb-8">
+                       <h3 className="text-white text-base font-medium flex items-center gap-2">
+                         <Activity className="w-4 h-4 text-primary" />
+                         Org Stress vs. Recovery Balance
+                       </h3>
+                       <div className="flex items-center gap-4 text-xs font-medium">
+                         <div className="flex items-center gap-1.5 text-primary">
+                           <div className="w-2.5 h-2.5 rounded-full bg-primary" /> Stress
+                         </div>
+                         <div className="flex items-center gap-1.5 text-emerald-400">
+                           <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" /> Recovery
+                         </div>
+                       </div>
+                    </div>
+                    <div className="h-[250px] w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={chartData}>
+                          <defs>
+                            <linearGradient id="colorStress" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#7C8CFF" stopOpacity={0.3}/>
+                              <stop offset="95%" stopColor="#7C8CFF" stopOpacity={0}/>
+                            </linearGradient>
+                            <linearGradient id="colorRecovery" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#10B981" stopOpacity={0.2}/>
+                              <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ffffff05" />
+                          <XAxis 
+                            dataKey="name" 
+                            axisLine={false} 
+                            tickLine={false} 
+                            tick={{ fill: '#ffffff40', fontSize: 12 }} 
+                            dy={10}
+                          />
+                          <YAxis hide />
+                          <Tooltip 
+                            contentStyle={{ backgroundColor: '#141B2D', border: '1px solid #ffffff10', borderRadius: '12px', fontSize: '12px' }}
+                            itemStyle={{ color: '#fff' }}
+                          />
+                          <Area type="monotone" dataKey="stress" stroke="#7C8CFF" strokeWidth={3} fillOpacity={1} fill="url(#colorStress)" />
+                          <Area type="monotone" dataKey="recovery" stroke="#10B981" strokeWidth={3} fillOpacity={1} fill="url(#colorRecovery)" />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
                   </div>
-                  <div className="flex items-end gap-2">
-                    <div className="text-3xl font-semibold text-white">{avgSleep}</div>
-                    <div className="text-secondary-text text-sm pb-1">hours/night</div>
+
+                  {/* Anonymized Department Heatmap */}
+                  <div className="bg-card border border-white/5 rounded-3xl p-6 shadow-xl">
+                    <div className="mb-8">
+                       <h3 className="text-white text-base font-medium flex items-center gap-2">
+                         <ShieldCheck className="w-4 h-4 text-secondary-text" />
+                         Anonymized Risk Heatmap
+                       </h3>
+                       <p className="text-xs text-secondary-text mt-1">Departments flagged by Burnout Correlation Engine.</p>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                       {departmentStats.map((dept, i) => (
+                         <div 
+                          key={i} 
+                          className={`p-4 rounded-2xl border transition-all ${
+                            dept.risk > 70 ? "bg-red-500/10 border-red-500/20" : 
+                            dept.risk > 40 ? "bg-amber-500/10 border-amber-500/20" : 
+                            "bg-emerald-500/5 border-emerald-500/10"
+                          }`}
+                         >
+                           <div className="text-[10px] uppercase font-bold text-secondary-text tracking-wider mb-1">{dept.name}</div>
+                           <div className={`text-xl font-semibold mb-1 ${
+                             dept.risk > 70 ? "text-red-400" : 
+                             dept.risk > 40 ? "text-amber-400" : 
+                             "text-emerald-400"
+                           }`}>{dept.risk}%</div>
+                           <div className="text-[9px] text-secondary-text">{dept.count} Members tracked</div>
+                         </div>
+                       ))}
+                    </div>
+                    <div className="mt-8 pt-6 border-t border-white/5 flex items-center justify-between">
+                       <div className="flex items-center gap-2 text-xs text-secondary-text">
+                         <Info className="w-3.5 h-3.5" />
+                         Aggregation prevents individual identification.
+                       </div>
+                    </div>
                   </div>
                 </div>
-
-              </div>
+              )}
               
               {/* Employee Data Table */}
-              <div className="bg-card border border-white/5 rounded-[24px] shadow-xl overflow-hidden">
+              <div className="bg-card border border-white/5 rounded-[24px] shadow-xl overflow-hidden animate-slide-up">
                 <div className="p-6 border-b border-white/5 flex items-center justify-between">
-                   <h3 className="text-white text-base font-medium">Employee Analytics</h3>
-                   <span className="text-xs text-secondary-text bg-white/5 px-3 py-1 rounded-full">Data anonymized by policy</span>
+                   <h3 className="text-white text-base font-medium">Individual Insights</h3>
+                   <span className="text-xs text-secondary-text bg-white/5 px-3 py-1 rounded-full flex items-center gap-1.5">
+                     <ShieldCheck className="w-3 h-3" /> Luna Privacy Protocol Active
+                   </span>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm">
                     <thead className="text-xs text-secondary-text bg-[#1A2333]/50">
                       <tr>
-                        <th className="px-6 py-4 font-medium border-b border-white/5 relative z-10 hidden md:table-cell">ID</th>
-                        <th className="px-6 py-4 font-medium border-b border-white/5 relative z-10">Name</th>
-                        <th className="px-6 py-4 font-medium border-b border-white/5 relative z-10">Status</th>
-                        <th className="px-6 py-4 font-medium border-b border-white/5 relative z-10 hidden sm:table-cell">Avg Sleep</th>
-                        <th className="px-6 py-4 font-medium border-b border-white/5 relative z-10">Workload / Overdue</th>
-                        <th className="px-6 py-4 font-medium border-b border-white/5 relative z-10">Stress Score</th>
+                        <th className="px-6 py-4 font-medium border-b border-white/5 relative z-10">Employee</th>
+                        <th className="px-6 py-4 font-medium border-b border-white/5 relative z-10">Department</th>
+                        <th className="px-6 py-4 font-medium border-b border-white/5 relative z-10">Workload Stress</th>
+                        <th className="px-6 py-4 font-medium border-b border-white/5 relative z-10 text-center">Recovery Score</th>
+                        <th className="px-6 py-4 font-medium border-b border-white/5 relative z-10">Burnout Status</th>
+                        <th className="px-6 py-4 font-medium border-b border-white/5 relative z-10 text-right">Actionable Insight</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
                       {employees.map((emp) => {
                         const isPending = emp.status === "pending";
-                        const stressScore = calculateStressScore(emp);
-                        const levelConfig = getStressLevel(stressScore);
+                        const factors = calculateAdvancedStressFactors(emp);
+                        const status = getBurnoutStatus(factors.totalBurnoutRisk);
 
                         return (
                           <tr key={emp.id} className="hover:bg-white/[0.02] transition-colors">
-                            <td className="px-6 py-4 text-secondary-text/50 font-mono text-xs hidden md:table-cell">#{emp.id.toUpperCase()}</td>
                             <td className="px-6 py-4">
                               <div className="font-medium text-white">{emp.name}</div>
-                              <div className="text-xs text-secondary-text hidden lg:block">{emp.email}</div>
+                              <div className="text-xs text-secondary-text uppercase text-[10px] tracking-widest mt-0.5">#{emp.id}</div>
                             </td>
                             <td className="px-6 py-4">
-                              {isPending ? (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-amber-500/10 text-amber-500 border border-amber-500/20">
-                                  Pending Invite
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                  Connected
-                                </span>
-                              )}
-                            </td>
-                            <td className="px-6 py-4 hidden sm:table-cell">
-                              {isPending ? <span className="text-secondary-text/50">-</span> : 
-                                <div className="flex items-center gap-2">
-                                  <span className="text-white">{emp.avgSleepHours}h</span>
-                                  <span className="text-xs text-secondary-text">({emp.avgSleepScore}/100)</span>
-                                </div>
-                              }
+                               <span className="text-xs text-secondary-text">{emp.department || "General"}</span>
                             </td>
                             <td className="px-6 py-4">
                               {isPending ? <span className="text-secondary-text/50">-</span> : 
                                 <div className="flex items-center gap-3">
                                   <div className="w-20 bg-[#1A2333] rounded-full h-1.5 overflow-hidden">
                                      <div 
-                                      className="bg-blue-400 h-full rounded-full" 
-                                      style={{ width: `${(emp.tasksCompleted / (emp.tasksAssigned || 1)) * 100}%` }}
+                                      className="bg-primary h-full rounded-full" 
+                                      style={{ width: `${factors.workloadStress}%` }}
                                      />
                                   </div>
-                                  <span className="text-xs text-secondary-text">{emp.tasksCompleted}/{emp.tasksAssigned}</span>
-                                  {emp.overdueTasks > 0 && <span className="text-xs text-red-400 font-medium ml-2">{emp.overdueTasks} Overdue</span>}
+                                  <span className="text-xs text-white font-medium">{factors.workloadStress}</span>
                                 </div>
                               }
                             </td>
-                            <td className="px-6 py-4">
+                            <td className="px-6 py-4 text-center">
                               {isPending ? <span className="text-secondary-text/50">-</span> : 
-                                <div className="flex items-center gap-3">
-                                  <div className="text-lg font-medium text-white w-8">{stressScore}</div>
-                                  <span className={`text-xs px-2 py-0.5 rounded ${levelConfig.bg} ${levelConfig.color}`}>
-                                    {levelConfig.label}
+                                <span className={`text-sm font-medium ${emp.recoveryPercentage > 70 ? "text-emerald-400" : emp.recoveryPercentage > 40 ? "text-amber-400" : "text-red-400"}`}>
+                                    {emp.recoveryPercentage}%
+                                </span>
+                              }
+                            </td>
+                            <td className="px-6 py-4">
+                              {isPending ? (
+                                <span className="text-secondary-text/30 text-xs">Waiting for sync...</span>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  {status.icon === "Flame" && <Flame className="w-3.5 h-3.5 text-red-500 animate-pulse" />}
+                                  {status.icon === "AlertTriangle" && <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />}
+                                  {status.icon === "Check" && <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />}
+                                  <span className={`text-xs font-semibold ${status.color}`}>
+                                    {status.label}
                                   </span>
                                 </div>
-                              }
+                              )}
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                               {isPending ? <span className="text-secondary-text/50">-</span> : (
+                                  <div className="flex flex-col items-end">
+                                     {factors.totalBurnoutRisk > 75 ? (
+                                       <span className="text-red-400 text-xs font-medium flex items-center gap-1.5 bg-red-400/5 px-2 py-1 rounded">
+                                          <HeartPulse className="w-3 h-3" /> Grant Wellness Day
+                                       </span>
+                                     ) : factors.workloadStress > 70 && emp.recoveryPercentage < 60 ? (
+                                       <span className="text-amber-400 text-xs font-medium bg-amber-400/5 px-2 py-1 rounded">
+                                          Reduce Sprint Points
+                                       </span>
+                                     ) : (
+                                       <span className="text-emerald-400 text-xs font-medium">Productive Baseline</span>
+                                     )}
+                                  </div>
+                               )}
                             </td>
                           </tr>
                         );

@@ -24,7 +24,7 @@ export async function GET(request: Request) {
        params: {
           jql: jqlConfig,
           maxResults: 50,
-          fields: "summary,status,duedate,priority"
+          fields: "summary,status,duedate,priority,customfield_10016,updated,created"
        },
        headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -38,11 +38,15 @@ export async function GET(request: Request) {
        summary: issue.fields.summary,
        status: issue.fields.status.name,
        priority: issue.fields.priority.name,
-       dueDate: issue.fields.duedate
+       dueDate: issue.fields.duedate,
+       updated: issue.fields.updated,
+       created: issue.fields.created,
+       storyPoints: issue.fields.customfield_10016 || 0
     }));
 
     return NextResponse.json({
         totalAssigned: response.data.total,
+        totalPoints: issues.reduce((acc: number, task: any) => acc + (task.storyPoints || 0), 0),
         issues: issues
     });
 
