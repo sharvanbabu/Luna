@@ -54,11 +54,13 @@ export async function GET(request: Request) {
 
     const site = resourcesResponse.data.find((resource: any) => resource.scopes.includes('read:jira-work')) || resourcesResponse.data[0];
     const cloudId = site.id;
+    const domain = site.url;
 
-    // 3. Store tokens and cloudId securely in HttpOnly cookies
+    // 3. Store tokens, cloudId, and domain securely in HttpOnly cookies
     const cookieOptions = { httpOnly: true, secure: process.env.NODE_ENV === 'production', path: '/' };
     cookies().set('atlassian_access_token', access_token, cookieOptions);
     cookies().set('atlassian_cloud_id', cloudId, cookieOptions);
+    cookies().set('atlassian_domain', domain, cookieOptions);
     if (refresh_token) {
       cookies().set('atlassian_refresh_token', refresh_token, cookieOptions);
     }

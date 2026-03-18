@@ -9,6 +9,7 @@ export default function EmployeeSetupPage() {
   
   const [lunaState, setLunaState] = useState<"idle" | "connecting" | "connected">("idle");
   const [jiraState, setJiraState] = useState<"idle" | "connecting" | "connected" | "error">("idle");
+  const [connectedDomain, setConnectedDomain] = useState("");
   const [hasConsented, setHasConsented] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
 
@@ -22,6 +23,17 @@ export default function EmployeeSetupPage() {
         setJiraState("error");
       }
     }
+
+    // Check global API status to persist connection state across navigations
+    fetch('/api/jira/status')
+      .then(res => res.json())
+      .then(data => {
+         if (data.connected) {
+           setJiraState("connected");
+           if (data.domain) setConnectedDomain(data.domain);
+         }
+      })
+      .catch(console.error);
   }, []);
 
   const connectLuna = () => {
@@ -103,9 +115,12 @@ export default function EmployeeSetupPage() {
               </div>
               
               {jiraState === "connected" ? (
-                <div className="flex items-center gap-2 text-emerald-400 bg-emerald-400/10 px-3 py-1.5 rounded-lg text-sm font-medium">
-                  <CheckCircle2 className="w-4 h-4" />
-                  Connected
+                <div className="flex flex-col items-end gap-1">
+                  <div className="flex items-center gap-2 text-emerald-400 bg-emerald-400/10 px-3 py-1.5 rounded-lg text-sm font-medium">
+                    <CheckCircle2 className="w-4 h-4" />
+                    Connected
+                  </div>
+                  {connectedDomain && <span className="text-[10px] text-emerald-400/70 truncate max-w-[150px] pr-1">{connectedDomain}</span>}
                 </div>
               ) : (
                 <div className="flex flex-col items-end gap-1">
