@@ -28,11 +28,6 @@ function SubscriptionPlans() {
   const totalAmount = selectedPlan.priceINR * employees;
 
   const handleBuy = async () => {
-    if (!isScriptLoaded) {
-      alert("Razorpay SDK is still loading. Please try again in a moment.");
-      return;
-    }
-
     setIsProcessing(true);
     
     // Amount must be passed in paise to the Razorpay API
@@ -120,7 +115,7 @@ function SubscriptionPlans() {
     <>
       <Script 
         src="https://checkout.razorpay.com/v1/checkout.js" 
-        onLoad={() => setIsScriptLoaded(true)}
+        onReady={() => setIsScriptLoaded(true)}
       />
       <div className="w-full max-w-4xl bg-card border border-white/5 rounded-[32px] p-8 md:p-12 shadow-2xl relative flex flex-col items-center">
         <h2 className="text-2xl font-medium text-white mb-2 tracking-tight">Select your plan</h2>
@@ -158,11 +153,13 @@ function SubscriptionPlans() {
 
           <button
             onClick={handleBuy}
-            disabled={isProcessing}
+            disabled={isProcessing || !isScriptLoaded}
             className="w-full bg-primary hover:bg-primary/90 text-white font-medium py-4 rounded-xl transition-all shadow-lg hover:shadow-[0_0_20px_rgba(124,140,255,0.4)] hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-50 disabled:hover:translate-y-0 disabled:shadow-none flex items-center justify-center gap-2 text-sm"
           >
             {isProcessing ? (
               <><Loader2 className="w-5 h-5 animate-spin" /> Preparing Checkout...</>
+            ) : !isScriptLoaded ? (
+              <><Loader2 className="w-5 h-5 animate-spin" /> Loading SDK...</>
             ) : (
               <><ShieldCheck className="w-5 h-5" /> Pay ₹{totalAmount.toLocaleString('en-IN')} with Razorpay</>
             )}
